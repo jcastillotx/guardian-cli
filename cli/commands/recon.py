@@ -38,6 +38,12 @@ def recon_command(
         "--model",
         "-m",
         help="Override AI model (e.g. gemini-3-pro, gemini-3-flash, claude-sonnet-4-5)"
+    ),
+    provider: str = typer.Option(
+        None,
+        "--provider",
+        "-p",
+        help="Override AI provider (gemini, openai, claude, openrouter)"
     )
 ):
     """
@@ -63,7 +69,18 @@ def recon_command(
     
     # Load configuration
     config = load_config(str(config_file))
-    
+
+    # Override provider if provided
+    if provider:
+        valid_providers = ["gemini", "openai", "claude", "openrouter"]
+        if provider not in valid_providers:
+            console.print(f"[bold red]Error:[/bold red] Invalid provider '{provider}'. Must be one of: {', '.join(valid_providers)}")
+            raise typer.Exit(1)
+        if "ai" not in config:
+            config["ai"] = {}
+        config["ai"]["provider"] = provider
+        console.print(f"[dim]Using provider override: {provider}[/dim]")
+
     # Override model if provided
     if model:
         if "ai" not in config:

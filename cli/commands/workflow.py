@@ -30,11 +30,17 @@ def workflow_command(
         "--model",
         "-m",
         help="Override AI model"
+    ),
+    provider: str = typer.Option(
+        None,
+        "--provider",
+        "-p",
+        help="Override AI provider (gemini, openai, claude, openrouter)"
     )
 ):
     """
     Run or list penetration testing workflows
-    
+
     Available workflows:
     - recon: Reconnaissance workflow
     - web: Web application pentest
@@ -44,17 +50,17 @@ def workflow_command(
     if action == "list":
         _list_workflows()
         return
-    
+
     if action == "run":
         if not name:
             console.print("[bold red]Error:[/bold red] --name is required for 'run' action")
             raise typer.Exit(1)
-        
+
         if not target:
             console.print("[bold red]Error:[/bold red] --target is required for 'run' action")
             raise typer.Exit(1)
-        
-        _run_workflow(name, target, config_file, model)
+
+        _run_workflow(name, target, config_file, model, provider)
     else:
         console.print(f"[bold red]Error:[/bold red] Unknown action: {action}")
         raise typer.Exit(1)
@@ -101,12 +107,23 @@ def _list_workflows():
 
 
 
-def _run_workflow(name: str, target: str, config_file: Path, model: str = None):
+def _run_workflow(name: str, target: str, config_file: Path, model: str | None = None, provider: str | None = None):
     """Run a workflow"""
     console.print(f"[bold cyan]🚀 Running {name} workflow on {target}[/bold cyan]\n")
-    
+
     config = load_config(str(config_file))
     
+    # Override provider if provided
+    if provider:
+        valid_providers = ["gemini", "openai", "claude", "openrouter"]
+        if provider not in valid_providers:
+            console.print(f"[bold red]Error:[/bold red] Invalid provider '{provider}'. Must be one of: {', '.join(valid_providers)}")
+            raise typer.Exit(1)
+        if "ai" not in config:
+            config["ai"] = {}
+        config["ai"]["provider"] = provider
+        console.print(f"[dim]Using provider override: {provider}[/dim]")
+
     # Override model if provided
     if model:
         if "ai" not in config:

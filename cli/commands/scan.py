@@ -27,6 +27,11 @@ def scan_command(
         "--model",
         "-m",
         help="Override AI model"
+    ),
+    provider: str = typer.Option(
+        None,
+        "--provider",
+        help="Override AI provider (gemini, openai, claude, openrouter)"
     )
 ):
     """
@@ -36,14 +41,26 @@ def scan_command(
     For full workflow, use 'guardian workflow run'.
     """
     console.print(f"[bold cyan]🔍 Scanning: {target}[/bold cyan]\n")
-    
+
     config = load_config(str(config_file))
-    
+
+    # Override provider if provided
+    if provider:
+        valid_providers = ["gemini", "openai", "claude", "openrouter"]
+        if provider not in valid_providers:
+            console.print(f"[bold red]Error:[/bold red] Invalid provider '{provider}'. Must be one of: {', '.join(valid_providers)}")
+            raise typer.Exit(1)
+        if "ai" not in config:
+            config["ai"] = {}
+        config["ai"]["provider"] = provider
+        console.print(f"[dim]Using provider override: {provider}[/dim]")
+
     # Override model if provided
     if model:
         if "ai" not in config:
             config["ai"] = {}
         config["ai"]["model"] = model
+        console.print(f"[dim]Using model override: {model}[/dim]")
     
     try:
         # Run nmap scan
